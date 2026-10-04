@@ -1,8 +1,22 @@
+# Переменные окружения и секреты
 .env
+
+# Временные файлы Python и кэш
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Артефакты сборки PyInstaller
 build/
 dist/
 *.spec
+
+# Логи и пользовательские конфиги
 logs/
 oneconfig/
 config/
+
+# Настройки IDE и редакторов
+.vscode/
+.idea/

@@ -1,0 +1,2447 @@
+
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Cube Launcher</title>
+    <style>
+        :root {
+            --bg-main: #0c0a0b;
+            --bg-card: #181416;
+            --bg-card-hover: #231c20;
+            --accent: #f97316;
+            --accent-glow: rgba(249, 115, 22, 0.25);
+            --text-primary: #f8fafc;
+            --text-secondary: #9ca3af;
+            --border: #2e262a;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #080708; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+            border: 1px solid rgba(249, 115, 22, 0.1);
+        }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            transform: translateZ(0);
+        }
+
+        .titlebar {
+            height: 48px;
+            background: #080708;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            z-index: 10001;
+            cursor: move;
+        }
+
+        .titlebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 14px;
+            letter-spacing: 1.2px;
+            color: var(--accent);
+            pointer-events: none;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+            z-index: 10002;
+            cursor: default;
+        }
+
+        .win-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: background 0.15s;
+        }
+
+        .win-btn:hover { background: var(--border); color: var(--text-primary); }
+        .win-btn.close:hover { background: #ef4444; color: white; }
+
+        .app-body { display: flex; flex: 1; overflow: hidden; margin-bottom: 38px; }
+
+        .sidebar {
+            width: 230px;
+            background: #080708;
+            border-right: 1px solid var(--border);
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 10;
+        }
+
+        .nav-btn {
+            padding: 11px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-secondary);
+            text-align: left;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-btn:hover { background: var(--bg-card); color: var(--text-primary); }
+        .nav-btn.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+
+        .sidebar-profile {
+            margin-top: auto;
+            background: #141012;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .sidebar-profile:hover {
+            border-color: var(--accent);
+            background: #1e171b;
+            transform: translateY(-2px);
+        }
+        .sidebar-profile-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--accent);
+            background: #231c20;
+            flex-shrink: 0;
+        }
+        .sidebar-profile-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex: 1;
+        }
+        .sidebar-profile-name {
+            font-weight: 700;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-primary);
+        }
+        .sidebar-profile-sub {
+            font-size: 11px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .content { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+        .page { display: none; flex-direction: column; gap: 16px; height: 100%; }
+        .page.active { display: flex; }
+
+        .ms-warning-banner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(234, 179, 8, 0.12);
+            border: 1px solid rgba(234, 179, 8, 0.4);
+            border-radius: var(--radius-md);
+            color: #fef08a;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .banner-container {
+            position: relative;
+            width: 100%;
+            min-height: 320px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 28px;
+            background: linear-gradient(135deg, rgba(249,115,22,0.15), var(--bg-card));
+        }
+
+        .banner-media {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: 1;
+            opacity: 0.65;
+        }
+
+        .banner-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, rgba(15,13,14,0.95) 0%, rgba(15,13,14,0.3) 60%, transparent 100%);
+            z-index: 2;
+        }
+
+        .banner-content { position: relative; z-index: 3; }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            border: none;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px var(--accent-glow);
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--border) !important;
+            box-shadow: none !important;
+        }
+
+        .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 18px var(--accent-glow); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626) !important; }
+        .btn-secondary { background: var(--border); box-shadow: none; }
+        .btn-secondary:hover:not(:disabled) { background: #3d3238; }
+        .btn-ms { background: linear-gradient(135deg, #0078d4, #005a9e) !important; box-shadow: 0 4px 12px rgba(0, 120, 212, 0.3) !important; }
+
+        .btn-installed {
+            background: #231c20 !important;
+            color: #9ca3af !important;
+            border: 1px solid #3d3238 !important;
+            box-shadow: none !important;
+            cursor: default !important;
+            transform: none !important;
+        }
+
+        .btn-update-available {
+            background: linear-gradient(135deg, #eab308, #ca8a04) !important;
+            color: #000 !important;
+            font-weight: 800 !important;
+            box-shadow: 0 4px 12px rgba(234, 179, 8, 0.3) !important;
+        }
+
+        input, select, textarea {
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: #080708;
+            color: var(--text-primary);
+            outline: none;
+            font-size: 14px;
+        }
+
+        input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #141012;
+            border: 1.5px solid #3d3238;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            position: relative;
+            flex-shrink: 0;
+            vertical-align: middle;
+            margin: 0;
+            outline: none;
+        }
+
+        input[type="checkbox"]:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        input[type="checkbox"]:checked {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            border-color: #f97316;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        input[type="checkbox"]:checked::after {
+            content: '';
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg) translate(-1px, -1px);
+            display: block;
+        }
+
+        .password-field-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-field-wrap input { width: 100%; padding-right: 40px; }
+        .password-eye-btn {
+            position: absolute; right: 10px; background: transparent; border: none;
+            color: var(--text-secondary); cursor: pointer; font-size: 16px;
+        }
+
+        .range-slider { width: 100%; accent-color: var(--accent); cursor: pointer; height: 6px; }
+
+        .installations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+        }
+
+        .accounts-auth-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .accounts-auth-grid { grid-template-columns: 1fr; }
+        }
+
+        .inst-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .inst-card:hover { border-color: var(--accent); background: var(--bg-card-hover); transform: translateY(-2px); }
+        .inst-card.active { border-color: var(--accent); box-shadow: 0 0 16px var(--accent-glow); }
+
+        .inst-card-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .inst-card-texts { display: flex; flex-direction: column; overflow: hidden; }
+        .inst-card-title { font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .inst-card-sub { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+
+        .tab-bar { display: flex; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .tab-btn {
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .tab-btn.active { background: var(--bg-card); border-color: var(--accent); color: var(--accent); }
+
+        .bottom-bar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 38px;
+            background: #080708;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+            z-index: 2000;
+        }
+
+        .bottom-bar-progress {
+            position: absolute;
+            bottom: 0; left: 0;
+            height: 3px;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.15s;
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 50px; right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .toast-item {
+            background: #181315;
+            border: 1px solid var(--accent);
+            border-left: 5px solid var(--accent);
+            color: var(--text-primary);
+            padding: 12px 18px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 250px;
+            max-width: 380px;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .toast-item.error { border-color: #ef4444; border-left-color: #ef4444; }
+        .toast-item.success { border-color: #22c55e; border-left-color: #22c55e; }
+        .toast-item.info { border-color: #3b82f6; border-left-color: #3b82f6; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 48px; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.88);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            width: 560px;
+            max-height: 88vh;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-card.large {
+            width: 95%;
+            max-width: 1100px;
+            min-height: 600px;
+            max-height: 90vh;
+        }
+
+        .drop-zone-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(249, 115, 22, 0.15);
+            border: 3px dashed var(--accent);
+            border-radius: var(--radius-lg);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            backdrop-filter: blur(4px);
+            pointer-events: none;
+        }
+        .drop-zone-overlay.drag-over { display: flex; }
+        .drop-zone-text {
+            font-size: 20px; font-weight: 800; color: #fff; background: #181416;
+            padding: 16px 28px; border-radius: 12px; border: 1px solid var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; }
+
+        .account-card {
+            background: #080708;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.15s;
+        }
+
+        .account-card.active { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+
+        .badge-type {
+            font-size: 10px; padding: 3px 8px; border-radius: 4px;
+            font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .badge-offline { background: #33292e; color: #a1a1aa; }
+        .badge-ms { background: rgba(0, 120, 212, 0.2); border: 1px solid #0078d4; color: #60a5fa; }
+        .badge-cf { background: rgba(241, 100, 54, 0.2); border: 1px solid #f16436; color: #f16436; }
+        .badge-mr { background: rgba(34, 197, 94, 0.2); border: 1px solid #22c55e; color: #22c55e; }
+        .badge-cube { background: rgba(249, 115, 22, 0.2); border: 1px solid var(--accent); color: var(--accent); }
+
+        .captcha-box {
+            background: #080708; border: 1px solid var(--border); padding: 10px 14px;
+            border-radius: var(--radius-sm); display: flex; align-items: center;
+            justify-content: space-between; font-weight: 700; color: var(--accent);
+        }
+
+        .otp-input-field {
+            font-size: 26px !important;
+            letter-spacing: 12px !important;
+            text-align: center !important;
+            font-weight: 800 !important;
+            color: var(--accent) !important;
+            padding: 14px !important;
+            border: 2px dashed var(--accent) !important;
+            background: #0a0809 !important;
+        }
+
+        @keyframes shimmerGpu {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .skeleton-shimmer {
+            position: relative;
+            background-color: #171214;
+            overflow: hidden;
+            border-radius: var(--radius-sm);
+        }
+
+        .skeleton-shimmer::after {
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            transform: translateX(-100%);
+            background: linear-gradient(90deg, rgba(249, 115, 22, 0) 0%, rgba(249, 115, 22, 0.18) 50%, rgba(249, 115, 22, 0) 100%);
+            animation: shimmerGpu 1.1s infinite linear;
+            content: '';
+            will-change: transform;
+        }
+
+        .skeleton-card {
+            background: #080708;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            min-height: 82px;
+        }
+
+        .cube-profile-banner {
+            position: relative;
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), #181416);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .cube-profile-big-avatar {
+            width: 80px; height: 80px; border-radius: 50%;
+            border: 3px solid var(--accent); object-fit: cover; background: #080708;
+        }
+
+        .mods-table-header {
+            display: flex; align-items: center; gap: 14px; padding: 10px 14px;
+            background: #110d0f; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;
+        }
+
+        .mod-row {
+            display: flex; align-items: center; gap: 14px; padding: 10px 14px;
+            background: #0a0809; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            transition: all 0.15s;
+        }
+        .mod-row:hover { background: #141012; border-color: rgba(249, 115, 22, 0.3); }
+        .mod-row.disabled { opacity: 0.55; background: #080607; }
+
+        .mod-check { width: 18px; height: 18px; }
+        .mod-row-icon {
+            width: 44px; height: 44px; border-radius: 8px; object-fit: cover;
+            background: #181416; border: 1px solid var(--border); flex-shrink: 0;
+        }
+        .mod-row-info { display: flex; flex-direction: column; flex: 2; overflow: hidden; }
+        .mod-row-title { font-weight: 700; font-size: 14px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mod-row-author { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+        .mod-row-ver-box { flex: 1.4; display: flex; flex-direction: column; overflow: hidden; gap: 2px; }
+        .mod-row-ver-tag { font-size: 11px; font-weight: 700; color: #60a5fa; }
+        .mod-row-filename { font-size: 10px; color: var(--text-secondary); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .switch { position: relative; display: inline-block; width: 42px; height: 22px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #33292e; transition: .15s; border-radius: 22px; border: 1px solid var(--border);
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px;
+            background-color: white; transition: .15s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #22c55e; border-color: #22c55e; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .catalog-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+            gap: 12px; align-content: start;
+        }
+        .resource-card {
+            background: #080708; border: 1px solid var(--border); border-radius: var(--radius-md);
+            padding: 12px 14px; display: flex; gap: 14px; align-items: center; transition: all 0.15s; min-height: 82px;
+        }
+        .resource-card:hover { border-color: var(--accent); background: #141012; }
+        .resource-card-img { width: 54px; height: 54px; border-radius: var(--radius-sm); object-fit: cover; background: #1a1618; border: 1px solid var(--border); flex-shrink: 0; }
+        .resource-card-center { flex: 1; display: flex; flex-direction: column; gap: 3px; overflow: hidden; }
+        .resource-card-title-row { display: flex; align-items: center; gap: 8px; overflow: hidden; }
+        .resource-card-title { font-weight: 700; font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .resource-card-meta { font-size: 11px; color: var(--text-secondary); }
+        .resource-card-desc { font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .resource-card-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+
+        .pagination-container {
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            margin-top: 15px; padding-top: 12px; border-top: 1px solid var(--border);
+        }
+        .pagination-btn {
+            background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
+            width: 32px; height: 32px; border-radius: var(--radius-sm); cursor: pointer;
+        }
+        .pagination-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* ПОЛНОЭКРАННАЯ ГАЛЕРЕЯ (LIGHTBOX) */
+        .lightbox-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.94);
+            z-index: 99999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .lightbox-overlay.active { display: flex; }
+        .lightbox-img-wrap {
+            position: relative;
+            max-width: 90vw;
+            max-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .lightbox-img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: var(--radius-md);
+            border: 2px solid var(--border);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            object-fit: contain;
+        }
+        .lightbox-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(24, 20, 22, 0.85);
+            border: 1px solid var(--border);
+            color: #fff;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .lightbox-nav-btn:hover { background: var(--accent); border-color: var(--accent); }
+        .lightbox-nav-btn.prev { left: -60px; }
+        .lightbox-nav-btn.next { right: -60px; }
+        .lightbox-close-btn {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: #fff;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .lightbox-close-btn:hover { background: #ef4444; }
+        .lightbox-counter {
+            margin-top: 14px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="titlebar pywebview-drag-region">
+        <div class="titlebar-brand">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            CUBE LAUNCHER
+        </div>
+
+        <div class="window-controls">
+            <button class="win-btn" onclick="window.pywebview.api.minimize()" title="Свернуть">&#8722;</button>
+            <button class="win-btn close" onclick="window.pywebview.api.close()" title="Закрыть">&#10005;</button>
+        </div>
+    </div>
+
+    <div class="app-body">
+        <div class="sidebar">
+            <button class="nav-btn active" onclick="switchPage('play', event)">🎮 Главная</button>
+            <button class="nav-btn" onclick="switchPage('installations', event)">📦 Установки</button>
+            <button class="nav-btn" onclick="switchPage('modpacks', event)">🎁 Модпаки</button>
+            <button class="nav-btn" onclick="switchPage('accounts', event)">👤 Аккаунты</button>
+            <button class="nav-btn" onclick="switchPage('settings', event)">⚙️ Настройки</button>
+
+            <div class="sidebar-profile" id="sidebarProfileBtn" onclick="openProfileModal()">
+                <img id="sidebarProfileAvatar" class="sidebar-profile-avatar" src="https://minotar.net/helm/Steve/100.png">
+                <div class="sidebar-profile-info">
+                    <div id="sidebarProfileName" class="sidebar-profile-name">Войти в профиль</div>
+                    <div id="sidebarProfileSub" class="sidebar-profile-sub">✨ Cube Account</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+
+            <div id="globalMsBanner" class="ms-warning-banner" style="display: none;">
+                <span style="font-size: 18px;">⚠️</span>
+                <span>Нет связи с серверами Microsoft. Используйте оффлайн-аккаунт для одиночной игры и обычных серверов.</span>
+            </div>
+
+            <div id="play" class="page active">
+                <div class="banner-container" id="mainBanner">
+                    <div id="bannerMediaWrapper"></div>
+                    <div class="banner-overlay"></div>
+                    <div class="banner-content">
+                        <h1 style="font-size: 32px;">Cube Launcher</h1>
+                        <p style="color: var(--text-secondary); margin-top: 6px; font-size: 15px;">
+                            Выберите сборку и нажимайте Играть!
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card" style="flex-direction: row; align-items: center; justify-content: space-between; margin-top: auto;">
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">АКТИВНАЯ СБОРКА</div>
+                        <div id="activeInstTitle" style="font-size: 18px; font-weight: 700; color: var(--accent);">Загрузка...</div>
+                    </div>
+                    <button class="btn" id="mainPlayBtn" style="padding: 14px 44px; font-size: 16px;" onclick="launchGame()">ИГРАТЬ</button>
+                </div>
+            </div>
+
+            <div id="installations" class="page">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>Сборки и Установки</h2>
+                    <button class="btn" onclick="openCreateModal()">+ Создать установку</button>
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary);">💡 Нажмите на сборку, чтобы открыть список её модов, шейдеров и настроек!</div>
+                <div class="installations-grid" id="installationsGrid"></div>
+            </div>
+
+            <div id="modpacks" class="page">
+                <h2>Каталог Модпаков</h2>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" id="modpackSearchInput" placeholder="Поиск модпаков..." style="flex: 2;" oninput="onModpackSearchInput()">
+                    <select id="modpackCatalogPlatform" style="flex: 1;" onchange="triggerModpackSearch(1)">
+                        <option value="modrinth">🟢 Modrinth</option>
+                        <option value="curseforge">🔥 CurseForge</option>
+                    </select>
+                    <select id="modpackLoaderFilter" style="flex: 1;" onchange="triggerModpackSearch(1)">
+                        <option value="">Все загрузчики</option>
+                        <option value="fabric">Fabric</option>
+                        <option value="forge">Forge</option>
+                        <option value="quilt">Quilt</option>
+                    </select>
+                    <select id="modpackVersionFilter" style="flex: 1;" onchange="triggerModpackSearch(1)">
+                        <option value="">Все версии</option>
+                    </select>
+                </div>
+                <div class="catalog-grid" id="modpacksGrid"></div>
+
+                <div class="pagination-container" id="modpacksPagination">
+                    <button class="pagination-btn" id="modPrevPage" onclick="changeModpackPage(-1)">◀</button>
+                    <span id="modPageInfo" style="font-size: 13px;">Страница 1 из 1</span>
+                    <button class="pagination-btn" id="modNextPage" onclick="changeModpackPage(1)">▶</button>
+                </div>
+            </div>
+
+            <div id="accounts" class="page">
+                <h2>Управление аккаунтами</h2>
+
+                <div class="accounts-auth-grid">
+                    <div class="card" style="justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 20px;">👤</span>
+                                <h3 style="font-size: 16px;">Оффлайн аккаунт</h3>
+                            </div>
+                            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">
+                                Вход без лицензии. Введите никнейм для игры.
+                            </p>
+                            <div class="form-group" style="margin-top: 14px;">
+                                <label>Никнейм в игре</label>
+                                <input type="text" id="accInput" placeholder="Введите ваш ник...">
+                            </div>
+                        </div>
+                        <button class="btn" style="margin-top: 14px;" onclick="addOfflineAccount()">Добавить оффлайн-профиль</button>
+                    </div>
+
+                    <div class="card" style="border-color: rgba(0, 120, 212, 0.4); justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <svg width="20" height="20" viewBox="0 0 23 23"><path fill="#f25022" d="M1 1h10v10H1z"/><path fill="#00a4ef" d="M1 12h10v10H1z"/><path fill="#7fba00" d="M12 1h10v10H12z"/><path fill="#ffb900" d="M12 12h10v10H12z"/></svg>
+                                <h3 style="font-size: 16px;">Microsoft Лицензия</h3>
+                            </div>
+                            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.4;">
+                                Вход через официальную учетную запись. Поддерживает лицензионные скины и серверы.
+                            </p>
+                        </div>
+                        <button class="btn btn-ms" id="msLoginBtn" style="padding: 13px 20px; font-size: 14px;" onclick="startMicrosoftAuth()">
+                            🌐 Войти через Microsoft
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 6px;">
+                    <h3>Сохраненные аккаунты</h3>
+                    <div id="accountsList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                </div>
+            </div>
+
+            <div id="settings" class="page">
+                <h2>Настройки Лаунчера</h2>
+                <div class="card" style="max-width: 600px;">
+                    <div class="form-group">
+                        <label>Фоновый баннер (Изображение / Видео)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="settingBannerPath" readonly placeholder="По умолчанию" style="flex: 1;">
+                            <button class="btn btn-secondary" onclick="browseBanner()">Обзор...</button>
+                            <button class="btn btn-danger" onclick="clearBanner()">✕</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between;">
+                            <label>Оперативная память (RAM)</label>
+                            <span id="ramMbLabel" style="font-weight: 700; color: var(--accent);">4096 МБ (4.0 ГБ)</span>
+                        </div>
+                        <input type="range" id="settingRamSlider" class="range-slider" min="1024" max="16384" step="512" value="4096" oninput="onRamSliderInput(this.value)">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Дополнительные JVM аргументы</label>
+                        <input type="text" id="settingJvm" placeholder="-XX:+UseG1GC" oninput="triggerAutoSave()">
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="settingConsole" onchange="triggerAutoSave()">
+                        <label for="settingConsole">Показывать консоль при запуске</label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="bottom-bar">
+        <div id="bottomBarStatus" style="font-size: 12px; color: var(--text-secondary);">Готов к запуску</div>
+        <div class="bottom-bar-progress" id="bottomBarProgress"></div>
+    </div>
+
+    <!-- ОКНО ПРОФИЛЯ CUBE LAUNCHER -->
+    <div class="modal-overlay" id="profileModal">
+        <div class="modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="modalAuthHeaderTitle">Профиль Cube Launcher</h3>
+                <button class="btn btn-secondary" onclick="closeModal('profileModal')">✕</button>
+            </div>
+
+            <!-- ШАГ 1: ВХОД ИЛИ ВВОД ДАННЫХ ДЛЯ РЕГИСТРАЦИИ -->
+            <div id="cubeNotLoggedView" style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 4px;">
+                    <button class="btn" id="cubeModeLoginBtn" style="flex: 1;" onclick="setCubeAuthMode('login')">Вход</button>
+                    <button class="btn btn-secondary" id="cubeModeRegBtn" style="flex: 1;" onclick="setCubeAuthMode('register')">Регистрация</button>
+                </div>
+
+                <div class="form-group">
+                    <label id="lblCubeLogin">Никнейм или Email</label>
+                    <input type="text" id="cubeInputLogin" placeholder="Ваш никнейм или почта...">
+                </div>
+
+                <div class="form-group" id="groupCubeEmail" style="display: none;">
+                    <label>Email адрес</label>
+                    <input type="email" id="cubeInputEmail" placeholder="example@mail.ru">
+                </div>
+
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <div class="password-field-wrap">
+                        <input type="password" id="cubeInputPassword" placeholder="••••••••">
+                        <button type="button" class="password-eye-btn" onclick="togglePassVisibility('cubeInputPassword', this)">👁️</button>
+                    </div>
+                </div>
+
+                <div class="form-group" id="groupCubePassRepeat" style="display: none;">
+                    <label>Повторите пароль</label>
+                    <div class="password-field-wrap">
+                        <input type="password" id="cubeInputPasswordRepeat" placeholder="••••••••">
+                        <button type="button" class="password-eye-btn" onclick="togglePassVisibility('cubeInputPasswordRepeat', this)">👁️</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Проверка (Капча)</label>
+                    <div class="captcha-box">
+                        <span id="captchaQuestionText">Загрузка...</span>
+                        <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="refreshCaptcha()">🔄</button>
+                    </div>
+                    <input type="text" id="cubeCaptchaInput" placeholder="Введите ответ...">
+                </div>
+
+                <button class="btn" id="cubeSubmitBtn" style="padding: 12px; margin-top: 4px;" onclick="submitCubeAuth()">Войти в аккаунт</button>
+            </div>
+
+            <!-- ШАГ 2: ВВОД 6-ЗНАЧНОГО КОДА С ПОЧТЫ -->
+            <div id="cubeOtpVerificationView" style="display: none; flex-direction: column; gap: 14px; text-align: center;">
+                <div style="font-size: 38px;">📧</div>
+                <h3 id="otpHeaderActionText" style="font-size: 18px;">Подтверждение почты</h3>
+                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                    Мы отправили 6-значный код на почту <br>
+                    <b id="otpTargetEmailText" style="color: var(--text-primary);">example@mail.ru</b>
+                </p>
+
+                <div class="form-group" style="margin: 6px 0;">
+                    <input type="text" id="cubeOtpCodeInput" class="otp-input-field" maxlength="6" placeholder="000000">
+                </div>
+
+                <button class="btn" id="btnConfirmOtpMain" style="padding: 12px; font-size: 14px;" onclick="confirmOtpAction()">✨ Подтвердить</button>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                    <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="backToAuthForm()">◀ Назад</button>
+                    <button class="btn btn-secondary" id="btnResendOtp" style="padding: 6px 12px; font-size: 12px;" onclick="resendOtpCode()">Отправить заново</button>
+                </div>
+            </div>
+
+            <!-- ШАГ 3: ЛИЧНЫЙ КАБИНЕТ (АВТОРИЗОВАН) -->
+            <div id="cubeLoggedView" style="display: none; flex-direction: column; gap: 14px;">
+                <div class="cube-profile-banner">
+                    <img id="cubeFullAvatar" class="cube-profile-big-avatar" src="">
+                    <div style="flex: 1;">
+                        <h2 id="cubeFullUsername" style="font-size: 22px;">Username</h2>
+                        <div id="cubeFullEmail" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Email</div>
+                        <div style="display: flex; gap: 6px; margin-top: 8px;">
+                            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="changeCubeAvatar()">📷 Сменить аватар</button>
+                        </div>
+                    </div>
+                    <button class="btn btn-danger" onclick="logoutCube()">🚪 Выйти</button>
+                </div>
+
+                <div class="form-group">
+                    <label>О себе</label>
+                    <textarea id="cubeBioText" rows="3" placeholder="Расскажите о себе..."></textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button class="btn" onclick="saveCubeBio()">💾 Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНЫЕ ОКНА УСТАНОВОК И ДЕТАЛЕЙ -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal-card">
+            <h3 id="modalInstTitle">Создать установку</h3>
+            <input type="hidden" id="modalInstId">
+            <div class="form-group">
+                <label>Название</label>
+                <input type="text" id="modalInstName" placeholder="Моя сборка">
+            </div>
+            <div class="form-group">
+                <label>Иконка</label>
+                <input type="text" id="modalInstIcon" value="🟧">
+            </div>
+            <div class="form-group">
+                <label>Версия Minecraft</label>
+                <select id="modalMcVer" onchange="onMcVerChange()"></select>
+            </div>
+            <div class="form-group">
+                <label>Загрузчик модов</label>
+                <select id="modalLoader" onchange="onLoaderChange()">
+                    <option value="vanilla">Vanilla (Чистый)</option>
+                    <option value="fabric">Fabric</option>
+                    <option value="forge">Forge</option>
+                    <option value="quilt">Quilt</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Версия загрузчика</label>
+                <select id="modalLoaderVer"><option value="latest">Последняя (Latest)</option></select>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                <button class="btn btn-secondary" onclick="closeModal('createModal')">Отмена</button>
+                <button class="btn" onclick="saveModalInstance()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОКНО СБОРКИ С DRAG-AND-DROP И ПОИСКОМ/ФИЛЬТРАМИ -->
+    <div class="modal-overlay" id="instanceViewModal">
+        <div class="modal-card large" id="instViewCard">
+            
+            <div class="drop-zone-overlay" id="instDropOverlay">
+                <div class="drop-zone-text">📥 Перетащите .jar или .zip файлы сюда</div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="instViewTitle" style="font-size: 22px;">Сборка</h2>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn" id="modalPlayBtn" onclick="launchCurrentInstance()">🚀 Запустить</button>
+                    <button class="btn btn-secondary" onclick="openActiveInstFolder()">📁 Папка</button>
+                    <button class="btn btn-secondary" onclick="editCurrentInstance()">✏️ Изменить</button>
+                    <button class="btn btn-danger" onclick="deleteCurrentInstance()">🗑️ Удалить</button>
+                    <button class="btn btn-secondary" onclick="closeModal('instanceViewModal')">✕</button>
+                </div>
+            </div>
+
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="switchInstTab('mods', event)">🧩 Моды</button>
+                <button class="tab-btn" onclick="switchInstTab('shaderpacks', event)">✨ Шейдеры</button>
+                <button class="tab-btn" onclick="switchInstTab('resourcepacks', event)">🎨 Ресурспаки</button>
+                <button class="tab-btn" onclick="switchInstTab('datapacks', event)">⚙️ Датапаки</button>
+            </div>
+
+            <!-- ПАНЕЛЬ ПОИСКА И ФИЛЬТРОВ ДЛЯ УСТАНОВЛЕННЫХ МОДОВ -->
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <input type="text" id="instSearchInput" placeholder="🔍 Поиск по названию, файлу, автору..." style="flex: 2;" oninput="applyInstalledFilter()">
+                <select id="instStatusFilter" style="flex: 1;" onchange="applyInstalledFilter()">
+                    <option value="all">Все файлы</option>
+                    <option value="enabled">Только включенные</option>
+                    <option value="disabled">Только выключенные</option>
+                    <option value="updates">Требуют обновления</option>
+                </select>
+                <button class="btn" onclick="openAddModsModal()">+ Каталог проектов</button>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="checkModUpdates()" id="btnCheckUpdates">🔄 Проверить обновления</button>
+                    <button class="btn btn-update-available" style="font-size: 12px; padding: 6px 12px; display: none;" onclick="updateAllMods()" id="btnUpdateAllMods">🚀 Обновить всё (0)</button>
+                    <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 10px;" onclick="toggleSelectedFiles(true)">Вкл. выбранные</button>
+                    <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 10px;" onclick="toggleSelectedFiles(false)">Выкл. выбранные</button>
+                    <button class="btn btn-danger" style="font-size: 12px; padding: 6px 10px;" onclick="deleteSelectedFiles()" title="Удалить выбранные">🗑️</button>
+                </div>
+            </div>
+
+            <div class="mods-table-header">
+                <input type="checkbox" id="selectAllModsCheck" class="mod-check" onchange="toggleSelectAllMods(this.checked)" title="Выбрать все">
+                <div style="width: 44px;">Иконка</div>
+                <div style="flex: 2;">Название проекта / Автор</div>
+                <div style="flex: 1.4;">Версия мода</div>
+                <div style="width: 42px; text-align: center;">Статус</div>
+                <div style="width: 90px; text-align: right;">Действия</div>
+            </div>
+
+            <div id="instFilesList" style="display: flex; flex-direction: column; gap: 8px; flex: 1; max-height: 440px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <!-- КАТАЛОГ С ФИЛЬТРАМИ И ГАЛОЧКОЙ СКРЫВАТЬ УСТАНОВЛЕННЫЕ -->
+    <div class="modal-overlay" id="addModsModal">
+        <div class="modal-card large">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Каталог Модификаций</h3>
+                <button class="btn btn-secondary" onclick="closeModal('addModsModal')">✕</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <input type="text" id="modSearchInput" placeholder="Поиск проектов..." style="flex: 2;" oninput="onModSearchInput()">
+                <select id="modCatalogPlatform" style="flex: 1;" onchange="triggerAutoSearch(1)">
+                    <option value="modrinth">🟢 Modrinth</option>
+                    <option value="curseforge">🔥 CurseForge</option>
+                </select>
+                <select id="modTargetInstance" style="flex: 1;" onchange="onTargetInstanceChange()"></select>
+                <select id="modTypeSelect" style="flex: 1;" onchange="triggerAutoSearch(1)">
+                    <option value="mods">Моды</option>
+                    <option value="shaders">Шейдеры</option>
+                    <option value="resourcepacks">Ресурспаки</option>
+                    <option value="datapacks">Датапаки</option>
+                </select>
+                <select id="modLoaderFilter" style="flex: 1;" onchange="triggerAutoSearch(1)">
+                    <option value="">Все загрузчики</option>
+                    <option value="fabric">Fabric</option>
+                    <option value="forge">Forge</option>
+                    <option value="quilt">Quilt</option>
+                    <option value="neoforge">NeoForge</option>
+                </select>
+                <select id="modVersionFilter" style="flex: 1;" onchange="triggerAutoSearch(1)">
+                    <option value="">Все версии</option>
+                </select>
+            </div>
+
+            <div class="catalog-grid" id="catalogGrid" style="max-height: 420px; overflow-y: auto;"></div>
+
+            <div class="pagination-container" id="modsPagination">
+                <button class="pagination-btn" id="modPrevPage" onclick="changeModPage(-1)">◀</button>
+                <span id="modPageInfo" style="font-size: 13px;">Страница 1 из 1</span>
+                <button class="pagination-btn" id="modNextPage" onclick="changeModPage(1)">▶</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ДЕТАЛИ МОДА -->
+    <div class="modal-overlay" id="modDetailsModal">
+        <div class="modal-card large">
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <img id="detailIcon" src="" style="width: 58px; height: 58px; border-radius: 10px; object-fit: cover; border: 1px solid var(--border);">
+                <div style="flex: 1;">
+                    <h2 id="detailTitle" style="font-size: 18px;">Название</h2>
+                    <div id="detailMeta" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">ID</div>
+                </div>
+                <button class="btn btn-secondary" onclick="closeModal('modDetailsModal')">✕</button>
+            </div>
+
+            <div class="gallery-track" id="detailGallery" style="display: flex; gap: 10px; overflow-x: auto; width: 100%; padding: 8px 0;"></div>
+
+            <h4 style="margin-top: 6px;">Файлы и версии:</h4>
+            <div id="detailVersionsList" style="display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <!-- ПОЛНОЭКРАННЫЙ ПРОСМОТР СКРИНШОТОВ (LIGHTBOX) -->
+    <div class="lightbox-overlay" id="galleryLightbox">
+        <button class="lightbox-close-btn" onclick="closeLightbox()">✕</button>
+        <div class="lightbox-img-wrap">
+            <button class="lightbox-nav-btn prev" onclick="changeLightboxImg(-1)">◀</button>
+            <img id="lightboxMainImg" class="lightbox-img" src="">
+            <button class="lightbox-nav-btn next" onclick="changeLightboxImg(1)">▶</button>
+        </div>
+        <div class="lightbox-counter" id="lightboxCounter">1 / 1</div>
+    </div>
+
+    <script>
+        let globalConfig = {};
+        let currentViewingInstId = null;
+        let currentResourceTab = 'mods';
+        let searchDebounceTimer = null;
+        let autoSaveTimer = null;
+        let gameState = 'default';
+        let activeRunningId = null;
+        let cachedModUpdates = {};
+        let currentCubeUser = null;
+        let cubeAuthMode = 'login';
+
+        let modpackPage = 1, modpackTotalPages = 1;
+        let modCatalogPage = 1, modCatalogTotalPages = 1;
+        let currentRawCatalogItems = [];
+        let cachedInstalledFiles = [];
+
+        // Галерея Lightbox
+        let currentLightboxGallery = [];
+        let currentLightboxIndex = 0;
+
+        let pendingAuthData = null;
+        let pendingAuthType = 'login';
+        let otpCooldownTimer = null;
+
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            return audioCtx;
+        }
+
+        function playUiSound(type = 'click') {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(120, now + 0.04);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                    osc.start(now);
+                    osc.stop(now + 0.04);
+                } else if (type === 'tab') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(450, now);
+                    osc.frequency.exponentialRampToValueAtTime(280, now + 0.035);
+                    gain.gain.setValueAtTime(0.06, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+                    osc.start(now);
+                    osc.stop(now + 0.035);
+                } else if (type === 'success') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523, now);
+                    osc.frequency.setValueAtTime(659, now + 0.08);
+                    osc.frequency.setValueAtTime(784, now + 0.16);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+                    osc.start(now);
+                    osc.stop(now + 0.28);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.linearRampToValueAtTime(110, now + 0.12);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'launch') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.18);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                }
+            } catch (e) {}
+        }
+
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.btn') || e.target.closest('.win-btn') || e.target.closest('.pagination-btn')) {
+                playUiSound('click');
+            } else if (e.target.closest('.nav-btn') || e.target.closest('.tab-btn')) {
+                playUiSound('tab');
+            }
+        });
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast-item ${type}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            if (type === 'success') playUiSound('success');
+            else if (type === 'error') playUiSound('error');
+            setTimeout(() => toast.remove(), 3500);
+        }
+
+        function updateDownloadStatus(text, val) {
+            document.getElementById('bottomBarStatus').textContent = text;
+            if (val !== undefined && val !== null) {
+                document.getElementById('bottomBarProgress').style.width = val + '%';
+            }
+        }
+
+        function updateDownloadProgress(val) {
+            document.getElementById('bottomBarProgress').style.width = val + '%';
+        }
+
+        function hideDownloadStatus() {
+            document.getElementById('bottomBarStatus').textContent = "Готов к запуску";
+            document.getElementById('bottomBarProgress').style.width = '0%';
+        }
+
+        function setPlayButtonState(state, runningInstId = null) {
+            gameState = state;
+            activeRunningId = (state === 'running' || state === 'launching' || state === 'installing') ? runningInstId : null;
+            const mainBtn = document.getElementById('mainPlayBtn');
+            const modalBtn = document.getElementById('modalPlayBtn');
+
+            if (mainBtn) {
+                if (state === 'installing') {
+                    mainBtn.textContent = "⏳ Установка...";
+                    mainBtn.disabled = true;
+                } else if (state === 'launching') {
+                    mainBtn.textContent = "🚀 Запуск...";
+                    mainBtn.disabled = true;
+                } else if (state === 'running') {
+                    mainBtn.textContent = "⏹ Закрыть игру";
+                    mainBtn.className = "btn btn-danger";
+                    mainBtn.disabled = false;
+                    mainBtn.onclick = () => window.pywebview.api.kill_game();
+                } else {
+                    mainBtn.textContent = "ИГРАТЬ";
+                    mainBtn.className = "btn";
+                    mainBtn.disabled = false;
+                    mainBtn.onclick = () => launchGame();
+                }
+            }
+
+            if (modalBtn) {
+                if (state === 'running' && (!runningInstId || runningInstId === currentViewingInstId)) {
+                    modalBtn.textContent = "⏹ Закрыть игру";
+                    modalBtn.className = "btn btn-danger";
+                    modalBtn.disabled = false;
+                    modalBtn.onclick = () => window.pywebview.api.kill_game();
+                } else if (state === 'installing' || state === 'launching') {
+                    modalBtn.textContent = state === 'installing' ? "⏳ Установка..." : "🚀 Запуск...";
+                    modalBtn.className = "btn";
+                    modalBtn.disabled = true;
+                } else {
+                    modalBtn.textContent = "🚀 Запустить";
+                    modalBtn.className = "btn";
+                    modalBtn.disabled = false;
+                    modalBtn.onclick = () => launchCurrentInstance();
+                }
+            }
+            renderInstallations();
+        }
+
+        function switchPage(pageId, evt) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if (evt) evt.target.classList.add('active');
+            if (pageId === 'modpacks') triggerModpackSearch(1);
+        }
+
+        function showModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+            if (id === 'instanceViewModal') {
+                window.pywebview.api.stop_watching_instance();
+            }
+        }
+
+        window.addEventListener('pywebviewready', () => {
+            refreshData();
+            loadMcVersions();
+            refreshMainProfileUI();
+            checkMsServerStatus();
+            setupDragAndDrop();
+        });
+
+        // ================= НАСТРОЙКА DRAG & DROP =================
+        function setupDragAndDrop() {
+            const card = document.getElementById('instViewCard');
+            const overlay = document.getElementById('instDropOverlay');
+            if (!card || !overlay) return;
+
+            window.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (document.getElementById('instanceViewModal').classList.contains('active')) {
+                    overlay.classList.add('drag-over');
+                }
+            });
+
+            window.addEventListener('dragleave', (e) => {
+                if (!e.relatedTarget || e.relatedTarget.nodeName === 'HTML') {
+                    overlay.classList.remove('drag-over');
+                }
+            });
+
+            window.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                overlay.classList.remove('drag-over');
+                if (!currentViewingInstId || !document.getElementById('instanceViewModal').classList.contains('active')) return;
+
+                const files = e.dataTransfer.files;
+                if (!files || files.length === 0) return;
+
+                showToast(`Загрузка ${files.length} файл(ов)...`, "info");
+                for (let file of files) {
+                    if (file.name.endsWith('.jar') || file.name.endsWith('.zip')) {
+                        const reader = new FileReader();
+                        reader.onload = async () => {
+                            const b64 = reader.result.split(',')[1];
+                            await window.pywebview.api.save_dropped_file_data(currentViewingInstId, currentResourceTab, file.name, b64);
+                            await refreshModalInstanceFiles();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+                showToast("Файлы успешно перенесены в сборку!", "success");
+            });
+        }
+
+        async function checkMsServerStatus() {
+            try {
+                const res = await window.pywebview.api.check_microsoft_status();
+                const banner = document.getElementById('globalMsBanner');
+                if (banner) {
+                    banner.style.display = (res && res.connected === false) ? 'flex' : 'none';
+                }
+            } catch (e) {}
+        }
+
+        async function refreshMainProfileUI() {
+            const resCube = await window.pywebview.api.get_cube_user();
+            currentCubeUser = resCube.user;
+
+            const avatarEl = document.getElementById('sidebarProfileAvatar');
+            const nameEl = document.getElementById('sidebarProfileName');
+            const subEl = document.getElementById('sidebarProfileSub');
+
+            if (currentCubeUser) {
+                avatarEl.src = currentCubeUser.avatar || `https://minotar.net/helm/${currentCubeUser.username}/100.png`;
+                nameEl.textContent = currentCubeUser.username;
+                subEl.textContent = "✨ Cube Profile";
+                document.getElementById('cubeNotLoggedView').style.display = 'none';
+                document.getElementById('cubeOtpVerificationView').style.display = 'none';
+                document.getElementById('cubeLoggedView').style.display = 'flex';
+                document.getElementById('cubeFullAvatar').src = currentCubeUser.avatar || `https://minotar.net/helm/${currentCubeUser.username}/100.png`;
+                document.getElementById('cubeFullUsername').textContent = currentCubeUser.username;
+                document.getElementById('cubeFullEmail').textContent = currentCubeUser.email || '';
+                document.getElementById('cubeBioText').value = currentCubeUser.bio || '';
+            } else {
+                avatarEl.src = 'https://minotar.net/helm/Steve/100.png';
+                nameEl.textContent = 'Войти в профиль';
+                subEl.textContent = '✨ Cube Account';
+                document.getElementById('cubeNotLoggedView').style.display = 'flex';
+                document.getElementById('cubeOtpVerificationView').style.display = 'none';
+                document.getElementById('cubeLoggedView').style.display = 'none';
+            }
+        }
+
+        async function openProfileModal() {
+            await refreshCaptcha();
+            showModal('profileModal');
+        }
+
+        function setCubeAuthMode(mode) {
+            cubeAuthMode = mode;
+            document.getElementById('cubeModeLoginBtn').className = `btn ${mode === 'login' ? '' : 'btn-secondary'}`;
+            document.getElementById('cubeModeRegBtn').className = `btn ${mode === 'register' ? '' : 'btn-secondary'}`;
+            document.getElementById('groupCubeEmail').style.display = mode === 'register' ? 'flex' : 'none';
+            document.getElementById('groupCubePassRepeat').style.display = mode === 'register' ? 'flex' : 'none';
+            document.getElementById('lblCubeLogin').textContent = mode === 'register' ? 'Никнейм (Логин)' : 'Никнейм или Email';
+            document.getElementById('cubeSubmitBtn').textContent = mode === 'register' ? '📧 Получить код регистрации' : '📧 Получить код для входа';
+        }
+
+        function togglePassVisibility(inputId, btn) {
+            const el = document.getElementById(inputId);
+            if (el.type === 'password') {
+                el.type = 'text';
+                btn.textContent = '🔒';
+            } else {
+                el.type = 'password';
+                btn.textContent = '👁️';
+            }
+        }
+
+        async function refreshCaptcha() {
+            const res = await window.pywebview.api.generate_captcha();
+            document.getElementById('captchaQuestionText').textContent = res.question;
+            document.getElementById('cubeCaptchaInput').value = '';
+        }
+
+        async function submitCubeAuth() {
+            const loginVal = document.getElementById('cubeInputLogin').value;
+            const passVal = document.getElementById('cubeInputPassword').value;
+            const captchaVal = document.getElementById('cubeCaptchaInput').value;
+
+            if (cubeAuthMode === 'login') {
+                showToast("Проверка данных и отправка кода...", "info");
+                const res = await window.pywebview.api.send_login_code(loginVal, passVal, captchaVal);
+                if (res.status === 'ok') {
+                    pendingAuthType = 'login';
+                    pendingAuthData = { login: loginVal, password: passVal };
+                    document.getElementById('otpHeaderActionText').textContent = "Подтверждение входа";
+                    document.getElementById('btnConfirmOtpMain').textContent = "🚀 Войти в аккаунт";
+                    document.getElementById('otpTargetEmailText').textContent = res.email;
+                    document.getElementById('cubeOtpCodeInput').value = '';
+                    document.getElementById('cubeNotLoggedView').style.display = 'none';
+                    document.getElementById('cubeOtpVerificationView').style.display = 'flex';
+                    startOtpCooldown(res.cooldown || 60);
+                } else {
+                    showToast(res.message, "error");
+                    refreshCaptcha();
+                }
+            } else {
+                const emailVal = document.getElementById('cubeInputEmail').value;
+                const passRepeat = document.getElementById('cubeInputPasswordRepeat').value;
+                if (passVal !== passRepeat) {
+                    showToast("Пароли не совпадают!", "error");
+                    return;
+                }
+                showToast("Отправка кода на почту...", "info");
+                const res = await window.pywebview.api.send_registration_code(loginVal, emailVal, passVal, captchaVal);
+                if (res.status === 'ok') {
+                    pendingAuthType = 'register';
+                    pendingAuthData = { username: loginVal, email: emailVal, password: passVal };
+                    document.getElementById('otpHeaderActionText').textContent = "Подтверждение регистрации";
+                    document.getElementById('btnConfirmOtpMain').textContent = "✨ Подтвердить и создать аккаунт";
+                    document.getElementById('otpTargetEmailText').textContent = emailVal;
+                    document.getElementById('cubeOtpCodeInput').value = '';
+                    document.getElementById('cubeNotLoggedView').style.display = 'none';
+                    document.getElementById('cubeOtpVerificationView').style.display = 'flex';
+                    startOtpCooldown(res.cooldown || 60);
+                } else {
+                    showToast(res.message, "error");
+                    refreshCaptcha();
+                }
+            }
+        }
+
+        function startOtpCooldown(sec) {
+            clearInterval(otpCooldownTimer);
+            const btn = document.getElementById('btnResendOtp');
+            btn.disabled = true;
+            let rem = sec;
+            btn.textContent = `Повтор (${rem}s)`;
+            otpCooldownTimer = setInterval(() => {
+                rem--;
+                if (rem <= 0) {
+                    clearInterval(otpCooldownTimer);
+                    btn.disabled = false;
+                    btn.textContent = "Отправить заново";
+                } else {
+                    btn.textContent = `Повтор (${rem}s)`;
+                }
+            }, 1000);
+        }
+
+        async function resendOtpCode() {
+            if (!pendingAuthData) return;
+            showToast("Отправка нового кода...", "info");
+            let res;
+            if (pendingAuthType === 'login') {
+                res = await window.pywebview.api.send_login_code(
+                    pendingAuthData.login, pendingAuthData.password, document.getElementById('cubeCaptchaInput').value || "0"
+                );
+            } else {
+                res = await window.pywebview.api.send_registration_code(
+                    pendingAuthData.username, pendingAuthData.email, pendingAuthData.password, document.getElementById('cubeCaptchaInput').value || "0"
+                );
+            }
+            if (res.status === 'ok') startOtpCooldown(res.cooldown || 60);
+            else showToast(res.message, "error");
+        }
+
+        function backToAuthForm() {
+            document.getElementById('cubeOtpVerificationView').style.display = 'none';
+            document.getElementById('cubeNotLoggedView').style.display = 'flex';
+            refreshCaptcha();
+        }
+
+        async function confirmOtpAction() {
+            if (!pendingAuthData) return;
+            const code = document.getElementById('cubeOtpCodeInput').value;
+            if (!code || code.trim().length !== 6) {
+                showToast("Введите 6-значный код!", "error");
+                return;
+            }
+            showToast("Проверка кода...", "info");
+            let res;
+            if (pendingAuthType === 'login') {
+                res = await window.pywebview.api.verify_and_login(pendingAuthData.login, pendingAuthData.password, code);
+            } else {
+                res = await window.pywebview.api.verify_and_register(pendingAuthData.username, pendingAuthData.email, pendingAuthData.password, code);
+            }
+
+            if (res.status === 'ok') {
+                pendingAuthData = null;
+                closeModal('profileModal');
+                await refreshData();
+            } else {
+                showToast(res.message, "error");
+            }
+        }
+
+        async function changeCubeAvatar() {
+            const res = await window.pywebview.api.select_cube_avatar();
+            if (res && res.status === 'ok') await refreshMainProfileUI();
+        }
+
+        async function logoutCube() {
+            await window.pywebview.api.logout_cube_account();
+            closeModal('profileModal');
+            await refreshData();
+        }
+
+        async function saveCubeBio() {
+            const bio = document.getElementById('cubeBioText').value;
+            await window.pywebview.api.update_cube_bio(bio);
+        }
+
+        async function startMicrosoftAuth() {
+            showToast("Открываем окно входа Microsoft...", "info");
+            await window.pywebview.api.start_microsoft_login();
+        }
+
+        async function addOfflineAccount() {
+            const u = document.getElementById('accInput').value;
+            if (!u.trim()) {
+                showToast("Введите никнейм!", "error");
+                return;
+            }
+            const res = await window.pywebview.api.add_account(u);
+            if (res.status === 'ok') {
+                document.getElementById('accInput').value = '';
+                await refreshData();
+                showToast("Оффлайн аккаунт добавлен!", "success");
+            }
+        }
+
+        async function selectAccount(u) {
+            await window.pywebview.api.select_account(u);
+            await refreshData();
+            showToast(`Аккаунт ${u} выбран!`, "info");
+        }
+
+        async function deleteAccount(u) {
+            await window.pywebview.api.delete_account(u);
+            await refreshData();
+            showToast(`Аккаунт ${u} удален`, "info");
+        }
+
+        async function refreshData() {
+            globalConfig = await window.pywebview.api.get_config();
+            const accounts = await window.pywebview.api.get_accounts();
+
+            const ramMb = globalConfig.ram_mb || 4096;
+            document.getElementById('settingRamSlider').value = ramMb;
+            onRamSliderInput(ramMb, false);
+
+            document.getElementById('settingJvm').value = globalConfig.jvm_args || '';
+            document.getElementById('settingConsole').checked = !!globalConfig.enable_console;
+            document.getElementById('settingBannerPath').value = globalConfig.banner_path || '';
+
+            loadBannerMedia();
+            renderActiveInstance();
+            renderInstallations();
+            renderAccounts(accounts);
+            populateTargetInstancesSelect();
+        }
+
+        async function loadBannerMedia() {
+            const res = await window.pywebview.api.get_banner_data();
+            const wrapper = document.getElementById('bannerMediaWrapper');
+            wrapper.innerHTML = '';
+            if (res.status === 'image') {
+                wrapper.innerHTML = `<img class="banner-media" src="${res.data}">`;
+            } else if (res.status === 'video') {
+                wrapper.innerHTML = `<video class="banner-media" src="${res.path}" autoplay loop muted></video>`;
+            }
+        }
+
+        function onRamSliderInput(val, autoSave = true) {
+            const gb = (val / 1024).toFixed(1);
+            document.getElementById('ramMbLabel').textContent = `${val} МБ (${gb} ГБ)`;
+            if (autoSave) triggerAutoSave();
+        }
+
+        function triggerAutoSave() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(async () => {
+                const ramMb = document.getElementById('settingRamSlider').value;
+                const jvm = document.getElementById('settingJvm').value;
+                const consoleEnabled = document.getElementById('settingConsole').checked;
+                await window.pywebview.api.save_settings_auto(ramMb, consoleEnabled, jvm);
+            }, 300);
+        }
+
+        async function browseBanner() {
+            const res = await window.pywebview.api.select_banner_file();
+            if (res && res.status === 'ok') {
+                document.getElementById('settingBannerPath').value = res.path;
+                await loadBannerMedia();
+                showToast("Баннер обновлен!", "success");
+            }
+        }
+
+        async function clearBanner() {
+            await window.pywebview.api.clear_banner_file();
+            document.getElementById('settingBannerPath').value = '';
+            await loadBannerMedia();
+        }
+
+        async function loadMcVersions() {
+            const versions = await window.pywebview.api.get_mc_versions();
+            const selects = ['modalMcVer', 'modVersionFilter', 'modpackVersionFilter'];
+            selects.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.innerHTML = id === 'modalMcVer' ? '' : '<option value="">Все версии</option>';
+                versions.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v;
+                    opt.textContent = v;
+                    el.appendChild(opt);
+                });
+            });
+            onMcVerChange();
+        }
+
+        async function onMcVerChange() { onLoaderChange(); }
+
+        async function onLoaderChange() {
+            const loader = document.getElementById('modalLoader').value;
+            const mcVer = document.getElementById('modalMcVer').value;
+            const loaderSelect = document.getElementById('modalLoaderVer');
+            loaderSelect.innerHTML = '<option value="latest">Последняя (Latest)</option>';
+
+            if (loader !== 'vanilla') {
+                const versions = await window.pywebview.api.get_loader_versions(loader, mcVer);
+                versions.forEach(fv => {
+                    const opt = document.createElement('option');
+                    opt.value = fv;
+                    opt.textContent = fv;
+                    loaderSelect.appendChild(opt);
+                });
+            }
+        }
+
+        function renderActiveInstance() {
+            const insts = globalConfig.instances || [];
+            const active = insts.find(i => i.id === globalConfig.active_instance_id) || insts[0];
+            if (active) {
+                document.getElementById('activeInstTitle').textContent = `${active.icon || '🟧'} ${active.name} (${active.mc_version})`;
+            }
+        }
+
+        function renderInstallations() {
+            const grid = document.getElementById('installationsGrid');
+            grid.innerHTML = '';
+            const insts = globalConfig.instances || [];
+
+            insts.forEach(inst => {
+                const card = document.createElement('div');
+                card.className = `inst-card ${inst.id === globalConfig.active_instance_id ? 'active' : ''}`;
+                card.setAttribute('data-inst-id', inst.id);
+                card.onclick = () => openInstanceMenu(inst.id);
+
+                const isRunning = gameState === 'running' && activeRunningId === inst.id;
+                const isBusy = (gameState === 'launching' || gameState === 'installing') && activeRunningId === inst.id;
+
+                let btnText = '▶ Играть';
+                let btnClass = 'btn';
+                let btnAction = `launchInstanceDirect('${inst.id}')`;
+
+                if (isRunning) {
+                    btnText = '⏹ Закрыть';
+                    btnClass = 'btn btn-danger';
+                    btnAction = 'window.pywebview.api.kill_game()';
+                } else if (isBusy) {
+                    btnText = '⏳ Запуск...';
+                    btnClass = 'btn';
+                    btnAction = '';
+                }
+
+                card.innerHTML = `
+                    <div class="inst-card-info">
+                        <div style="font-size: 30px;">${inst.icon || '🟧'}</div>
+                        <div class="inst-card-texts">
+                            <div class="inst-card-title">${inst.name}</div>
+                            <div class="inst-card-sub">${inst.mc_version} • ${inst.loader.toUpperCase()}</div>
+                        </div>
+                    </div>
+                    <button class="${btnClass} inst-play-btn" ${isBusy ? 'disabled' : ''} onclick="event.stopPropagation(); ${btnAction}">
+                        ${btnText}
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        async function launchInstanceDirect(instId) {
+            await window.pywebview.api.select_instance(instId);
+            await refreshData();
+            playUiSound('launch');
+            window.pywebview.api.launch_active_game(instId);
+        }
+
+        function renderAccounts(accounts) {
+            const list = document.getElementById('accountsList');
+            list.innerHTML = '';
+            if (accounts.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="color: var(--text-secondary); padding: 10px;">Нет сохраненных аккаунтов. Добавьте профиль выше!</div>';
+                return;
+            }
+
+            accounts.forEach(acc => {
+                const isMs = acc.type === 'microsoft';
+                const item = document.createElement('div');
+                item.className = `account-card ${acc.active ? 'active' : ''}`;
+                item.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 22px;">${isMs ? '🔷' : '👤'}</span>
+                        <div>
+                            <div style="font-weight: 700; display: flex; align-items: center; gap: 8px; ${acc.active ? 'color: var(--accent);' : ''}">
+                                ${acc.username}
+                                <span class="badge-type ${isMs ? 'badge-ms' : 'badge-offline'}">${isMs ? 'Microsoft' : 'Оффлайн'}</span>
+                                ${acc.active ? '<span style="color: var(--accent); font-size: 12px;">★ Активен</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        ${!acc.active ? `<button class="btn" style="padding: 6px 14px; font-size: 12px;" onclick="selectAccount('${acc.username}')">Выбрать</button>` : ''}
+                        <button class="btn btn-danger" style="padding: 6px 14px; font-size: 12px;" onclick="deleteAccount('${acc.username}')">Удалить</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function populateTargetInstancesSelect() {
+            const select = document.getElementById('modTargetInstance');
+            if (!select) return;
+            select.innerHTML = '';
+            (globalConfig.instances || []).forEach(inst => {
+                const opt = document.createElement('option');
+                opt.value = inst.id;
+                opt.textContent = `${inst.name} (${inst.mc_version})`;
+                select.appendChild(opt);
+            });
+        }
+
+        async function openInstanceMenu(instId) {
+            currentViewingInstId = instId;
+            cachedModUpdates = {};
+            const inst = globalConfig.instances.find(i => i.id === instId);
+            if (!inst) return;
+            document.getElementById('instViewTitle').textContent = `${inst.icon} ${inst.name}`;
+            currentResourceTab = 'mods';
+            setPlayButtonState(gameState, activeRunningId);
+            
+            // Запуск фонового отслеживания изменений папки
+            window.pywebview.api.start_watching_instance(currentViewingInstId, currentResourceTab);
+            
+            await refreshModalInstanceFiles();
+            showModal('instanceViewModal');
+            checkModUpdates(false);
+        }
+
+        async function switchInstTab(tab, evt) {
+            currentResourceTab = tab;
+            document.querySelectorAll('#instanceViewModal .tab-btn').forEach(b => b.classList.remove('active'));
+            if (evt) evt.target.classList.add('active');
+            window.pywebview.api.start_watching_instance(currentViewingInstId, currentResourceTab);
+            await refreshModalInstanceFiles();
+        }
+
+        async function checkModUpdates(showNotification = true) {
+            if (!currentViewingInstId) return;
+            const btnCheck = document.getElementById('btnCheckUpdates');
+            const btnUpdateAll = document.getElementById('btnUpdateAllMods');
+            if (btnCheck) btnCheck.textContent = "⏳ Проверка...";
+
+            const res = await window.pywebview.api.check_instance_updates(currentViewingInstId);
+            if (btnCheck) btnCheck.textContent = "🔄 Проверить обновления";
+
+            if (res.status === 'ok') {
+                cachedModUpdates = res.updates || {};
+                const count = res.updates_count || 0;
+                if (btnUpdateAll) {
+                    if (count > 0) {
+                        btnUpdateAll.style.display = "inline-flex";
+                        btnUpdateAll.textContent = `🚀 Обновить всё (${count})`;
+                    } else {
+                        btnUpdateAll.style.display = "none";
+                    }
+                }
+                await refreshModalInstanceFiles();
+                if (showNotification) {
+                    if (count > 0) showToast(`Найдено обновлений: ${count}`, "success");
+                    else showToast("Все моды обновлены!", "info");
+                }
+            } else if (showNotification) {
+                showToast("Ошибка проверки: " + res.message, "error");
+            }
+        }
+
+        async function updateAllMods() {
+            if (!currentViewingInstId) return;
+            await window.pywebview.api.update_all_mods(currentViewingInstId);
+            cachedModUpdates = {};
+            const btnUpdateAll = document.getElementById('btnUpdateAllMods');
+            if (btnUpdateAll) btnUpdateAll.style.display = "none";
+        }
+
+        async function updateSingleMod(filename) {
+            if (!currentViewingInstId || !cachedModUpdates[filename]) return;
+            const info = cachedModUpdates[filename];
+            showToast(`Обновление ${info.new_filename}...`, "info");
+            const res = await window.pywebview.api.update_single_mod(currentViewingInstId, filename, info.url, info.new_filename);
+            if (res.status === 'ok') {
+                delete cachedModUpdates[filename];
+                showToast(`Мод ${info.new_filename} обновлён!`, "success");
+                await refreshModalInstanceFiles();
+                const remaining = Object.keys(cachedModUpdates).length;
+                const btnUpdateAll = document.getElementById('btnUpdateAllMods');
+                if (btnUpdateAll) {
+                    btnUpdateAll.style.display = remaining > 0 ? "inline-flex" : "none";
+                    btnUpdateAll.textContent = `🚀 Обновить всё (${remaining})`;
+                }
+            } else {
+                showToast("Ошибка: " + res.message, "error");
+            }
+        }
+
+        // Тихий перерендер из фонового трекера (без показа скелетонов)
+        async function silentRefreshModalFiles() {
+            if (!currentViewingInstId) return;
+            cachedInstalledFiles = await window.pywebview.api.get_instance_files(currentViewingInstId, currentResourceTab);
+            applyInstalledFilter();
+        }
+
+        async function refreshModalInstanceFiles() {
+            if (!currentViewingInstId) return;
+            const list = document.getElementById('instFilesList');
+            const selectAllBox = document.getElementById('selectAllModsCheck');
+            if (selectAllBox) selectAllBox.checked = false;
+
+            renderFileSkeletons(list, 3);
+            cachedInstalledFiles = await window.pywebview.api.get_instance_files(currentViewingInstId, currentResourceTab);
+            applyInstalledFilter();
+        }
+
+        // ================= ПОИСК И ФИЛЬТРАЦИЯ УСТАНОВЛЕННЫХ МОДОВ =================
+        function applyInstalledFilter() {
+            const list = document.getElementById('instFilesList');
+            if (!list) return;
+
+            const q = (document.getElementById('instSearchInput').value || '').toLowerCase().trim();
+            const statusFilter = document.getElementById('instStatusFilter').value || 'all';
+
+            let filtered = cachedInstalledFiles.filter(f => {
+                const matchQuery = !q || (f.display_name && f.display_name.toLowerCase().includes(q)) ||
+                                   (f.filename && f.filename.toLowerCase().includes(q)) ||
+                                   (f.author && f.author.toLowerCase().includes(q));
+                if (!matchQuery) return false;
+
+                const hasUpdate = !!cachedModUpdates[f.filename];
+                if (statusFilter === 'enabled') return f.enabled;
+                if (statusFilter === 'disabled') return !f.enabled;
+                if (statusFilter === 'updates') return hasUpdate;
+                return true;
+            });
+
+            list.innerHTML = filtered.length === 0 ? `<div class="empty-state" style="padding: 20px; text-align: center; color: var(--text-secondary);">Ничего не найдено в этой папке.</div>` : '';
+            
+            const fallbackModIcon = "https://cdn-icons-png.flaticon.com/512/3344/3344384.png";
+
+            filtered.forEach(f => {
+                const row = document.createElement('div');
+                row.className = `mod-row ${!f.enabled ? 'disabled' : ''}`;
+                
+                const updateInfo = cachedModUpdates[f.filename];
+                const updateBadge = updateInfo ? `<span class="badge-type badge-mr" style="font-size: 10px; padding: 2px 6px;">⬆ ${updateInfo.new_version}</span>` : '';
+                const updateBtn = updateInfo ? `<button class="btn btn-update-available" style="padding: 5px 8px; font-size: 11px;" onclick="updateSingleMod('${f.filename}')" title="Обновить до ${updateInfo.new_version}">🔄</button>` : '';
+
+                row.innerHTML = `
+                    <input type="checkbox" class="mod-check mod-item-check" value="${f.filename}">
+                    <img class="mod-row-icon" src="${f.icon || fallbackModIcon}" onerror="this.src='${fallbackModIcon}'">
+                    
+                    <div class="mod-row-info">
+                        <div class="mod-row-title">${f.display_name}</div>
+                        <div class="mod-row-author">👤 ${f.author || 'Автор не указан'}</div>
+                    </div>
+
+                    <div class="mod-row-ver-box">
+                        <div class="mod-row-ver-tag">
+                            <span>${f.version || 'v1.0.0'}</span>
+                            ${updateBadge}
+                        </div>
+                        <span class="mod-row-filename">${f.clean_name}</span>
+                    </div>
+
+                    <label class="switch" title="Включить / Выключить">
+                        <input type="checkbox" ${f.enabled ? 'checked' : ''} onchange="toggleFile('${f.filename}', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+
+                    <div style="display: flex; gap: 4px; align-items: center; justify-content: flex-end; width: 90px;">
+                        ${updateBtn}
+                        <button class="btn btn-danger" style="padding: 5px 8px; font-size: 11px;" onclick="deleteFile('${f.filename}')" title="Удалить файл">🗑️</button>
+                    </div>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function renderFileSkeletons(container, count = 3) {
+            container.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const sk = document.createElement('div');
+                sk.className = 'mod-row';
+                sk.innerHTML = `
+                    <div class="skeleton-shimmer" style="width: 18px; height: 18px;"></div>
+                    <div class="skeleton-shimmer" style="width: 44px; height: 44px; border-radius: 8px;"></div>
+                    <div style="flex: 2; display: flex; flex-direction: column; gap: 6px;">
+                        <div class="skeleton-shimmer" style="width: 60%; height: 14px;"></div>
+                        <div class="skeleton-shimmer" style="width: 35%; height: 10px;"></div>
+                    </div>
+                    <div style="flex: 1.4; display: flex; flex-direction: column; gap: 6px;">
+                        <div class="skeleton-shimmer" style="width: 50%; height: 12px;"></div>
+                        <div class="skeleton-shimmer" style="width: 70%; height: 10px;"></div>
+                    </div>
+                    <div class="skeleton-shimmer" style="width: 42px; height: 22px; border-radius: 20px;"></div>
+                    <div class="skeleton-shimmer" style="width: 32px; height: 24px; border-radius: 6px;"></div>
+                `;
+                container.appendChild(sk);
+            }
+        }
+
+        function renderCatalogSkeletons(container, count = 6) {
+            container.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const sk = document.createElement('div');
+                sk.className = 'skeleton-card';
+                sk.innerHTML = `
+                    <div class="skeleton-shimmer" style="width: 54px; height: 54px; border-radius: 6px; flex-shrink: 0;"></div>
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; overflow: hidden;">
+                        <div class="skeleton-shimmer" style="width: 65%; height: 14px;"></div>
+                        <div class="skeleton-shimmer" style="width: 45%; height: 10px;"></div>
+                        <div class="skeleton-shimmer" style="width: 90%; height: 10px;"></div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;">
+                        <div class="skeleton-shimmer" style="width: 80px; height: 26px; border-radius: 6px;"></div>
+                    </div>
+                `;
+                container.appendChild(sk);
+            }
+        }
+
+        function toggleSelectAllMods(checked) {
+            document.querySelectorAll('.mod-item-check').forEach(cb => { cb.checked = checked; });
+        }
+
+        function getSelectedFilenames() {
+            const selected = [];
+            document.querySelectorAll('.mod-item-check:checked').forEach(cb => { selected.push(cb.value); });
+            return selected;
+        }
+
+        async function toggleSelectedFiles(targetState) {
+            const files = getSelectedFilenames();
+            if (files.length === 0) {
+                showToast("Выберите хотя бы один файл галочкой!", "info");
+                return;
+            }
+            for (const fname of files) {
+                const isCurrentlyDisabled = fname.endsWith('.disabled');
+                if (targetState && isCurrentlyDisabled) {
+                    await window.pywebview.api.toggle_instance_file(currentViewingInstId, currentResourceTab, fname);
+                } else if (!targetState && !isCurrentlyDisabled) {
+                    await window.pywebview.api.toggle_instance_file(currentViewingInstId, currentResourceTab, fname);
+                }
+            }
+            await refreshModalInstanceFiles();
+            showToast("Выбранные файлы обновлены", "success");
+        }
+
+        async function deleteSelectedFiles() {
+            const files = getSelectedFilenames();
+            if (files.length === 0) {
+                showToast("Выберите хотя бы один файл галочкой!", "info");
+                return;
+            }
+            for (const fname of files) {
+                await window.pywebview.api.delete_instance_file(currentViewingInstId, currentResourceTab, fname);
+            }
+            await refreshModalInstanceFiles();
+            showToast("Выбранные файлы удалены", "info");
+        }
+
+        async function toggleFile(fname, isChecked) {
+            await window.pywebview.api.toggle_instance_file(currentViewingInstId, currentResourceTab, fname);
+            await refreshModalInstanceFiles();
+        }
+
+        async function deleteFile(fname) {
+            await window.pywebview.api.delete_instance_file(currentViewingInstId, currentResourceTab, fname);
+            await refreshModalInstanceFiles();
+        }
+
+        function openActiveInstFolder() {
+            if (currentViewingInstId) window.pywebview.api.open_instance_folder(currentViewingInstId);
+        }
+
+        async function deleteCurrentInstance() {
+            await window.pywebview.api.delete_instance(currentViewingInstId);
+            closeModal('instanceViewModal');
+            await refreshData();
+        }
+
+        function editCurrentInstance() {
+            const inst = globalConfig.instances.find(i => i.id === currentViewingInstId);
+            if (!inst) return;
+            document.getElementById('modalInstId').value = inst.id;
+            document.getElementById('modalInstName').value = inst.name;
+            document.getElementById('modalInstIcon').value = inst.icon || '🟧';
+            closeModal('instanceViewModal');
+            showModal('createModal');
+        }
+
+        function launchCurrentInstance() {
+            if (currentViewingInstId) {
+                playUiSound('launch');
+                window.pywebview.api.launch_active_game(currentViewingInstId);
+            }
+        }
+
+        function launchGame() {
+            playUiSound('launch');
+            window.pywebview.api.launch_active_game();
+        }
+
+        function openCreateModal() {
+            document.getElementById('modalInstId').value = '';
+            document.getElementById('modalInstName').value = '';
+            showModal('createModal');
+        }
+
+        async function saveModalInstance() {
+            const id = document.getElementById('modalInstId').value;
+            const name = document.getElementById('modalInstName').value || 'Моя сборка';
+            const icon = document.getElementById('modalInstIcon').value || '🟧';
+            const mcVer = document.getElementById('modalMcVer').value;
+            const loader = document.getElementById('modalLoader').value;
+            const loaderVer = document.getElementById('modalLoaderVer').value;
+
+            await window.pywebview.api.save_instance({
+                id: id || undefined, name, icon, mc_version: mcVer, loader, loader_version: loaderVer
+            });
+            closeModal('createModal');
+            await refreshData();
+        }
+
+        // ================= ПОИСК МОДПАКОВ =================
+        function onModpackSearchInput() {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => triggerModpackSearch(1), 250);
+        }
+
+        async function triggerModpackSearch(page = 1) {
+            modpackPage = page;
+            const grid = document.getElementById('modpacksGrid');
+            renderCatalogSkeletons(grid, 6);
+
+            const query = document.getElementById('modpackSearchInput').value;
+            const platform = document.getElementById('modpackCatalogPlatform').value || 'modrinth';
+            const loader = document.getElementById('modpackLoaderFilter').value;
+            const ver = document.getElementById('modpackVersionFilter').value;
+            
+            const res = await window.pywebview.api.fetch_resources(query, "modpacks", loader, ver, modpackPage, 10, platform);
+            modpackTotalPages = res.total_pages || 1;
+            renderModpackItems(res.items, platform);
+            document.getElementById('modpackPageInfo').textContent = `Страница ${modpackPage} из ${modpackTotalPages}`;
+            document.getElementById('modPrevPage').disabled = modpackPage <= 1;
+            document.getElementById('modNextPage').disabled = modpackPage >= modpackTotalPages;
+        }
+
+        function changeModpackPage(delta) {
+            const p = modpackPage + delta;
+            if (p >= 1 && p <= modpackTotalPages) triggerModpackSearch(p);
+        }
+
+        function renderModpackItems(items, platform = "modrinth") {
+            const grid = document.getElementById('modpacksGrid');
+            grid.innerHTML = items.length === 0 ? `<div class="empty-state" style="grid-column: 1/-1; padding: 20px; text-align: center; color: var(--text-secondary);">Ничего не найдено</div>` : '';
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'resource-card';
+                card.innerHTML = `
+                    <img class="resource-card-img" src="${item.icon || 'https://cdn-icons-png.flaticon.com/512/3344/3344384.png'}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3344/3344384.png'">
+                    <div class="resource-card-center">
+                        <div class="resource-card-title-row">
+                            <span class="resource-card-title">${item.title}</span>
+                            <span class="badge-type badge-mr">Modpack</span>
+                        </div>
+                        <div class="resource-card-meta">Автор: ${item.author} • ⬇ ${(item.downloads || 0).toLocaleString()}</div>
+                        <div class="resource-card-desc">${item.desc}</div>
+                    </div>
+                    <button class="btn" style="padding: 8px 14px; font-size: 11px;" onclick="window.pywebview.api.install_modpack_as_instance('${item.id}', '${item.title.replace(/'/g, "\\'")}', '${item.icon}', '${platform}')">⬇ Установить</button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // ================= ПОИСК И КАТАЛОГ МОДОВ =================
+        function openAddModsModal() {
+            showModal('addModsModal');
+            if (currentViewingInstId) {
+                document.getElementById('modTargetInstance').value = currentViewingInstId;
+            }
+            triggerAutoSearch(1);
+        }
+
+        function onTargetInstanceChange() { triggerAutoSearch(1); }
+        function onModSearchInput() {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => triggerAutoSearch(1), 250);
+        }
+
+        async function triggerAutoSearch(page = 1) {
+            modCatalogPage = page;
+            const grid = document.getElementById('catalogGrid');
+            renderCatalogSkeletons(grid, 6);
+
+            const query = document.getElementById('modSearchInput').value;
+            const platform = document.getElementById('modCatalogPlatform').value || 'modrinth';
+            const resType = document.getElementById('modTypeSelect').value;
+            const loader = document.getElementById('modLoaderFilter').value;
+            const ver = document.getElementById('modVersionFilter').value;
+            
+            const targetInstId = document.getElementById('modTargetInstance').value || globalConfig.active_instance_id;
+            cachedInstalledFiles = await window.pywebview.api.get_instance_files(targetInstId, resType);
+
+            const res = await window.pywebview.api.fetch_resources(query, resType, loader, ver, modCatalogPage, 10, platform);
+            modCatalogTotalPages = res.total_pages || 1;
+            currentRawCatalogItems = res.items || [];
+            
+            renderCurrentCatalogPage();
+
+            document.getElementById('modPageInfo').textContent = `Страница ${modCatalogPage} из ${modCatalogTotalPages}`;
+            document.getElementById('modPrevPage').disabled = modCatalogPage <= 1;
+            document.getElementById('modNextPage').disabled = modCatalogPage >= modCatalogTotalPages;
+        }
+
+        function renderCurrentCatalogPage() {
+            const grid = document.getElementById('catalogGrid');
+            
+            // Набор имен установленных модов для быстрой проверки
+            const installedCleanNames = new Set(cachedInstalledFiles.map(f => (f.clean_name || '').toLowerCase().replace(/[^a-z0-9]/g, '')));
+            const installedDisplayNames = new Set(cachedInstalledFiles.map(f => (f.display_name || '').toLowerCase().replace(/[^a-z0-9]/g, '')));
+
+            let itemsToRender = currentRawCatalogItems;
+
+            grid.innerHTML = itemsToRender.length === 0 ? `<div class="empty-state" style="grid-column: 1/-1; padding: 20px; text-align: center; color: var(--text-secondary);">Ничего не найдено</div>` : '';
+
+            itemsToRender.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'resource-card';
+                const isCf = item.platform === 'curseforge';
+                const platBadge = isCf ? '<span class="badge-type badge-cf">CurseForge</span>' : '<span class="badge-type badge-mr">Modrinth</span>';
+                const fallbackImg = isCf ? 'https://media.forgecdn.net/avatars/thumbnails/282/467/256/256/637289313020452406.png' : 'https://cdn-icons-png.flaticon.com/512/3344/3344384.png';
+
+                const itemClean = (item.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                const isInstalled = installedCleanNames.has(itemClean) || installedDisplayNames.has(itemClean);
+                
+                let actionBtnHtml = `<button class="btn" style="padding: 6px 12px; font-size: 11px;" onclick="smartInstallResource('${item.id}', '${item.platform}')">⬇ Установить</button>`;
+                if (isInstalled) {
+                    actionBtnHtml = `<button class="btn btn-installed" style="padding: 6px 12px; font-size: 11px;">✓ Установлено</button>`;
+                }
+
+                card.innerHTML = `
+                    <img class="resource-card-img" src="${item.icon || fallbackImg}" onerror="this.src='${fallbackImg}'">
+                    <div class="resource-card-center">
+                        <div class="resource-card-title-row">
+                            <span class="resource-card-title">${item.title}</span>
+                            ${platBadge}
+                        </div>
+                        <div class="resource-card-meta">Автор: ${item.author} • ⬇ ${(item.downloads || 0).toLocaleString()}</div>
+                        <div class="resource-card-desc">${item.desc}</div>
+                    </div>
+                    <div class="resource-card-actions">
+                        ${actionBtnHtml}
+                        <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 11px;" onclick="openResourceDetails('${item.id}', '${item.platform}')">Файлы</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function changeModPage(delta) {
+            const p = modCatalogPage + delta;
+            if (p >= 1 && p <= modCatalogTotalPages) triggerAutoSearch(p);
+        }
+
+        async function smartInstallResource(projectId, platform) {
+            const instId = document.getElementById('modTargetInstance').value || globalConfig.active_instance_id;
+            const rType = document.getElementById('modTypeSelect').value || 'mods';
+            showToast("Поиск подходящей версии под сборку...", "info");
+            const res = await window.pywebview.api.auto_install_resource(projectId, platform, instId, rType);
+            if (res.status === 'not_found') {
+                showToast(res.message, "error");
+            } else if (res.status === 'error') {
+                showToast("Ошибка установки: " + res.message, "error");
+            }
+        }
+
+        async function openResourceDetails(projectId, platform = "modrinth") {
+            const details = await window.pywebview.api.get_resource_details(projectId, platform);
+            if (details.status !== 'ok') {
+                showToast('Ошибка загрузки данных', 'error');
+                return;
+            }
+            const p = details.project;
+            document.getElementById('detailIcon').src = p.icon || 'https://cdn-icons-png.flaticon.com/512/3344/3344384.png';
+            document.getElementById('detailTitle').textContent = p.title;
+            document.getElementById('detailMeta').textContent = `ID: ${p.id} • ${platform.toUpperCase()}`;
+
+            const gal = document.getElementById('detailGallery');
+            gal.innerHTML = '';
+            currentLightboxGallery = p.gallery || [];
+            
+            currentLightboxGallery.forEach((img, idx) => {
+                const i = document.createElement('img');
+                i.style.cssText = "height: 110px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); cursor: pointer; transition: transform 0.15s;";
+                i.src = img;
+                i.onmouseover = () => i.style.transform = "scale(1.04)";
+                i.onmouseleave = () => i.style.transform = "scale(1.0)";
+                i.onclick = () => openLightbox(idx);
+                gal.appendChild(i);
+            });
+
+            const vList = document.getElementById('detailVersionsList');
+            vList.innerHTML = '';
+
+            const instId = document.getElementById('modTargetInstance').value || globalConfig.active_instance_id;
+            const rType = document.getElementById('modTypeSelect').value || 'mods';
+            const instFiles = await window.pywebview.api.get_instance_files(instId, rType);
+            const installedCleanNames = new Set(instFiles.map(f => (f.clean_name || '').toLowerCase()));
+
+            (details.versions || []).forEach(v => {
+                const f = (v.files || []).find(fl => fl.primary) || (v.files ? v.files[0] : null);
+                if (!f) return;
+
+                const isInstalled = installedCleanNames.has((f.filename || '').toLowerCase());
+                let btnHtml = `<button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="installFile('${f.url}', '${f.filename}')">Скачать</button>`;
+                if (isInstalled) {
+                    btnHtml = `<button class="btn btn-installed" style="padding: 4px 10px; font-size: 11px;">✓ Установлено</button>`;
+                }
+
+                const row = document.createElement('div');
+                row.style.cssText = 'background: #080708; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 12px;';
+                row.innerHTML = `
+                    <div>
+                        <strong>${v.name}</strong>
+                        <div style="font-size: 10px; color: var(--text-secondary);">MC: ${(v.game_versions || []).slice(0, 3).join(', ')} • ${(v.loaders || []).join(', ')}</div>
+                    </div>
+                    ${btnHtml}
+                `;
+                vList.appendChild(row);
+            });
+
+            showModal('modDetailsModal');
+        }
+
+        // ================= ПОЛНОЭКРАННЫЙ ПРОСМОТРЩИК ФОТО (LIGHTBOX) =================
+        function openLightbox(index) {
+            if (!currentLightboxGallery || currentLightboxGallery.length === 0) return;
+            currentLightboxIndex = index;
+            updateLightboxView();
+            document.getElementById('galleryLightbox').classList.add('active');
+        }
+
+        function closeLightbox() {
+            document.getElementById('galleryLightbox').classList.remove('active');
+        }
+
+        function changeLightboxImg(delta) {
+            if (!currentLightboxGallery || currentLightboxGallery.length === 0) return;
+            currentLightboxIndex = (currentLightboxIndex + delta + currentLightboxGallery.length) % currentLightboxGallery.length;
+            updateLightboxView();
+        }
+
+        function updateLightboxView() {
+            const img = document.getElementById('lightboxMainImg');
+            const counter = document.getElementById('lightboxCounter');
+            img.src = currentLightboxGallery[currentLightboxIndex];
+            counter.textContent = `${currentLightboxIndex + 1} / ${currentLightboxGallery.length}`;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('galleryLightbox').classList.contains('active')) {
+                if (e.key === 'Escape') closeLightbox();
+                if (e.key === 'ArrowLeft') changeLightboxImg(-1);
+                if (e.key === 'ArrowRight') changeLightboxImg(1);
+            }
+        });
+
+        function installFile(url, filename) {
+            const instId = document.getElementById('modTargetInstance').value || globalConfig.active_instance_id;
+            const rType = document.getElementById('modTypeSelect').value || 'mods';
+            window.pywebview.api.install_resource(instId, url, filename, rType);
+        }
+    </script>
+</body>
+</html>
+"""
+
+def main():
+    api = LauncherAPI()
+    window = webview.create_window(
+        title="Cube Launcher",
+        html=HTML_CONTENT,
+        js_api=api,
+        width=1180,
+        height=760,
+        resizable=True,
+        frameless=True,
+        easy_drag=True
+    )
+    api.window = window
+    webview.start(icon=ICON_PATH, debug=False)
+
+if __name__ == "__main__":
+    main()

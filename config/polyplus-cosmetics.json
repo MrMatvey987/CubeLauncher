@@ -1,0 +1,37 @@
+{
+	"shouldersVisibility": {
+		"class": "org.polyfrost.polyplus.client.CosmeticVisibility",
+		"value": "EVERYONE"
+	},
+	"hideHeadCosmeticsWithHelmet": false,
+	"capesVisibility": {
+		"class": "org.polyfrost.polyplus.client.CosmeticVisibility",
+		"value": "EVERYONE"
+	},
+	"backsVisibility": {
+		"class": "org.polyfrost.polyplus.client.CosmeticVisibility",
+		"value": "EVERYONE"
+	},
+	"hideFeetCosmeticsWithBoots": true,
+	"glovesVisibility": {
+		"class": "org.polyfrost.polyplus.client.CosmeticVisibility",
+		"value": "EVERYONE"
+	},
+	"hatsVisibility": {
+		"class": "org.polyfrost.polyplus.client.CosmeticVisibility",
+		"value": "EVERYONE"
+	},
+	"wingsVisibility": {
+		"class": "org.polyfrost.polyplus.client.CosmeticVisibility",
+		"value": "EVERYONE"
+	},
+	"migratedFromLegacyConfig": true,
+	"bootsVisibility": {
+		"class": "org.polyfrost.polyplus.client.CosmeticVisibility",
+		"value": "EVERYONE"
+	},
+	"aurasVisibility": {
+		"class": "org.polyfrost.polyplus.client.CosmeticVisibility",
+		"value": "EVERYONE"
+	}
+}

@@ -25,6 +25,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import webview
 import minecraft_launcher_lib
+from dotenv import load_dotenv
 
 # 1. Уникальный App ID для панели задач Windows
 if sys.platform == 'win32':

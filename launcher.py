@@ -929,6 +929,43 @@ class LauncherAPI:
             except Exception:
                 self._eval_js(f"updateDownloadStatus('{txt}')")
 
+    def check_launcher_updates(self) -> Dict[str, Any]:
+        """Проверяет наличие новой версии лаунчера на GitHub."""
+        try:
+            repo_url = "https://api.github.com/repos/MrMatvey987/CubeLauncher/releases/latest"
+            res = SESSION.get(repo_url, headers=HEADERS, timeout=5)
+            if res.status_code == 200:
+                data = res.json()
+                latest_version = data.get("tag_name", "v1.0.0").strip()
+                release_notes = data.get("body", "Нет описания изменений.")
+                download_url = ""
+                
+                # Ищем .exe файл вложения в релизе
+                assets = data.get("assets", [])
+                for asset in assets:
+                    if asset.get("name", "").endswith(".exe"):
+                        download_url = asset.get("browser_download_url", "")
+                        break
+                
+                # Если вложений нет, даем ссылку на саму страницу релиза
+                if not download_url:
+                    download_url = data.get("html_url", "https://github.com/MrMatvey987/CubeLauncher/releases")
+
+                current_version = "v1.0.0" # Укажи свою текущую версию лаунчера
+                
+                has_update = latest_version != current_version
+                return {
+                    "status": "ok",
+                    "has_update": has_update,
+                    "latest_version": latest_version,
+                    "current_version": current_version,
+                    "release_notes": release_notes,
+                    "download_url": download_url
+                }
+        except Exception as e:
+            log.warning("Ошибка проверки обновлений лаунчера: %s", e)
+        return {"status": "error", "message": "Не удалось проверить обновления"}           
+
     def _init_discord_rpc(self) -> None:
         if not HAS_DISCORD_RPC:
             return
@@ -7146,7 +7183,6 @@ function toggleAboutSubmenu() {
     if (chevron) chevron.textContent = isAboutSubmenuOpen ? '▲' : '▼';
 }
 
-// Проверка обновлений с анимацией и уведомлением
 async function checkLauncherUpdates() {
     const btn = document.getElementById('btnCheckLauncherUpdate');
     const statusText = document.getElementById('launcherUpdateStatusText');
@@ -7156,18 +7192,37 @@ async function checkLauncherUpdates() {
         btn.textContent = '⏳ Проверка...';
     }
     
-    // Имитация опроса сервера обновлений
-    setTimeout(() => {
+    try {
+        const res = await window.pywebview.api.check_launcher_updates();
+        if (res && res.status === 'ok') {
+            if (res.has_update) {
+                if (statusText) {
+                    statusText.textContent = `⚡ Доступна новая версия: ${res.latest_version}!`;
+                    statusText.style.color = '#f97316';
+                }
+                // Можно предложить скачать или открыть ссылку в браузере
+                const confirmUpdate = confirm(`Вышла новая версия лаунчера (${res.latest_version})!\n\nХотите открыть страницу скачивания на GitHub?`);
+                if (confirmUpdate && res.download_url) {
+                    window.open(res.download_url, '_blank');
+                }
+            } else {
+                if (statusText) {
+                    statusText.textContent = `✓ Установлена актуальная версия (${res.current_version})`;
+                    statusText.style.color = '#22c55e';
+                }
+                showToast("У вас установлена последняя версия Cube Launcher!", "success");
+            }
+        } else {
+            showToast("Не удалось проверить обновления с GitHub", "error");
+        }
+    } catch (e) {
+        showToast("Ошибка при проверке обновлений", "error");
+    } finally {
         if (btn) {
             btn.disabled = false;
             btn.textContent = '🔄 Проверить обновления';
         }
-        if (statusText) {
-            statusText.textContent = '✓ У вас самая свежая версия (v1.0.0 Beta)';
-            statusText.style.color = '#22c55e';
-        }
-        showToast("У вас установлена последняя версия Cube Launcher!", "success");
-    }, 1200);
+    }
 }
 
 document.addEventListener('click', (e) => {
